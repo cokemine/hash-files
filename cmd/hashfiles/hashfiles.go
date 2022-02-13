@@ -18,7 +18,8 @@ import (
 type Empty struct{}
 
 var (
-	dirPath     = flag.String("dir", "", "The directory to be hashed")
+	pwd, _      = os.Getwd()
+	dirPath     = flag.String("dir", pwd, "The directory to be hashed")
 	algo        = flag.String("algo", "md5", "The hash algorithm to use, multiple algorithms can be specified by comma separated")
 	parallelNum = flag.Int("parallel", runtime.NumCPU(), "The number of parallel workers")
 	verbose     = flag.Bool("verbose", false, "Verbose output log")
@@ -27,16 +28,13 @@ var (
 func main() {
 	flag.Parse()
 
-	if *dirPath == "" {
-		*dirPath, _ = os.Getwd()
-	}
-
 	*dirPath = strings.TrimSuffix(*dirPath, string(os.PathSeparator)) + string(os.PathSeparator)
 
 	files, err := hashfiles.ListDir(*dirPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	var timeConsumed int64
 
 	for _, algo := range strings.Split(*algo, ",") {
