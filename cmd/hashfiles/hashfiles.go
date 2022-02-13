@@ -36,6 +36,7 @@ func main() {
 		log.Fatal(err)
 	}
 	var timeConsumed int64
+	fileWorkers := SliceChunk(files, *parallelNum)
 
 	for _, algo := range strings.Split(*algo, ",") {
 		var hashFn func(filePath string) (string, error)
@@ -56,8 +57,6 @@ func main() {
 		}
 
 		result := make([]string, len(files))
-		fileWorkers := SliceChunk(files, *parallelNum)
-
 		timeStart := time.Now().Unix()
 
 		for i := range fileWorkers {
