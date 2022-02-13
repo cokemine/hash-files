@@ -15,6 +15,8 @@ import (
 	hashfiles "github.com/cokemine/hash-files"
 )
 
+type Empty struct{}
+
 var (
 	dirPath     = flag.String("dir", "", "The directory to be hashed")
 	algo        = flag.String("algo", "md5", "The hash algorithm to use, multiple algorithms can be specified by comma separated")
@@ -36,11 +38,9 @@ func main() {
 		log.Fatal(err)
 	}
 	var timeConsumed int64
-	fileWorkers := SliceChunk(files, *parallelNum)
 
 	for _, algo := range strings.Split(*algo, ",") {
 		var hashFn func(filePath string) (string, error)
-		var wg sync.WaitGroup
 		algo := strings.TrimSpace(algo)
 
 		switch algo {
@@ -56,32 +56,35 @@ func main() {
 			log.Fatal(errors.New("unsupported algorithm"))
 		}
 
+		filesChan, wg := make(chan Empty, *parallelNum), sync.WaitGroup{}
 		result := make([]string, len(files))
 		timeStart := time.Now().Unix()
 
-		for i := range fileWorkers {
-			l := len(fileWorkers[i])
-			wg.Add(l)
-			for j := range fileWorkers[i] {
-				go func(j int, file string) {
-					defer wg.Done()
+		for i := range files {
+			wg.Add(1)
+			filesChan <- Empty{}
 
-					encoded, err := hashFn(file)
-					if err != nil {
-						panic(err)
-					}
+			go func(i int, file string) {
+				defer func() {
+					wg.Done()
+					<-filesChan
+				}()
 
-					fileName := hashfiles.TransformPath(strings.TrimPrefix(file, *dirPath))
-					result[i*l+j] = fmt.Sprintf("%s %s\n", encoded, fileName)
+				encoded, err := hashFn(file)
+				if err != nil {
+					panic(err)
+				}
 
-					if *verbose {
-						fmt.Printf("%s [%d,%d]: %s, result: %s\n", algo, i*l+j+1, len(files), fileName, encoded)
-					}
+				fileName := hashfiles.TransformPath(strings.TrimPrefix(file, *dirPath))
+				result[i] = fmt.Sprintf("%s %s\n", encoded, fileName)
 
-				}(j, fileWorkers[i][j])
-			}
-			wg.Wait()
+				if *verbose {
+					fmt.Printf("%s [%d,%d]: %s, result: %s\n", algo, i+1, len(files), fileName, encoded)
+				}
+			}(i, files[i])
 		}
+
+		wg.Wait()
 
 		timeEnd := time.Now().Unix()
 		timeConsumed += timeEnd - timeStart
@@ -94,13 +97,4 @@ func main() {
 	}
 
 	log.Printf("All files hashed, %d seconds\n", timeConsumed)
-}
-
-func SliceChunk(s []string, size int) [][]string {
-	var ret [][]string
-	for size < len(s) {
-		s, ret = s[size:], append(ret, s[:size:size])
-	}
-	ret = append(ret, s)
-	return ret
 }
