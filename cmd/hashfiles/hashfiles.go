@@ -49,21 +49,21 @@ func main() {
 		panic(errors.New("unsupported algorithm"))
 	}
 
-	result := make([]string, 0, len(files))
+	result := make([]string, len(files))
 	fileWorkers := SliceChunk(files, *parallelNum)
 
 	for i := range fileWorkers {
 		l := len(fileWorkers[i])
 		wg.Add(l)
 		for j := range fileWorkers[i] {
-			go func(file string) {
+			go func(j int, file string) {
 				defer wg.Done()
 				encoded, err := hashFn(file)
 				if err != nil {
 					panic(err)
 				}
-				result = append(result, fmt.Sprintf("%s %s\n", encoded, hashfiles.TransformPath(strings.TrimPrefix(file, *dirPath))))
-			}(fileWorkers[i][j])
+				result[i*l+j] = fmt.Sprintf("%s %s\n", encoded, hashfiles.TransformPath(strings.TrimPrefix(file, *dirPath)))
+			}(j, fileWorkers[i][j])
 		}
 		wg.Wait()
 	}
