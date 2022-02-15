@@ -29,6 +29,7 @@ func main() {
 	flag.Parse()
 
 	*dirPath = strings.TrimSuffix(*dirPath, string(os.PathSeparator)) + string(os.PathSeparator)
+	*algo = strings.ToLower(*algo)
 
 	files, err := hashfiles.ListDir(*dirPath)
 	if err != nil {
