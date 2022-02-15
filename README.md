@@ -1,4 +1,4 @@
-# hash-files
+# hashfiles
 
 Self-used hash generator.
 

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	hashfiles "github.com/cokemine/hash-files"
+	"github.com/cokemine/hashfiles"
 )
 
 type Empty struct{}

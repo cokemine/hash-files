@@ -1,4 +1,4 @@
-module github.com/cokemine/hash-files
+module github.com/cokemine/hashfiles
 
 go 1.17
 
