@@ -114,7 +114,7 @@ func main() {
 
 								encoded, err := hashFn(file)
 								if err != nil {
-									panic(err)
+									log.Fatal(err)
 								}
 
 								fileName := hashfiles.TransformPath(strings.TrimPrefix(file, dirPath))
@@ -136,8 +136,10 @@ func main() {
 						if err != nil {
 							log.Fatal(err)
 						}
-						log.Printf("All files hashed, %d seconds\n", timeConsumed)
 					}
+
+					log.Printf("All files hashed, %d seconds\n", timeConsumed)
+
 					return nil
 				},
 			},
@@ -159,6 +161,9 @@ func main() {
 						}
 						r := bufio.NewReader(file)
 						i, tot, unMatched := 0, 0, 0
+
+						filesChan, wg := make(chan Empty, parallelNum), sync.WaitGroup{}
+
 						for {
 							line, err := r.ReadString('\n')
 							line = strings.TrimSpace(line)
@@ -171,24 +176,47 @@ func main() {
 								continue
 							}
 							i = i + 1
-							sum := strings.SplitN(line, " ", 2)
-							fileHash, err := hashFn(path.Join(dirPath, sum[1]))
-							if err != nil {
-								log.Fatal(err)
-							}
-							if fileHash != sum[0] {
-								unMatched++
-								log.Printf("[Not Matched] %s [%d]: %s\n", algo, i, sum[1])
-							} else if verbose {
-								log.Printf("[Matched] %s [%d]: %s\n", algo, i, sum[1])
-							}
-							tot++
+
+							wg.Add(1)
+							filesChan <- Empty{}
+
+							go func(i int, line string) {
+								defer func() {
+									wg.Done()
+									<-filesChan
+								}()
+
+								sum := strings.SplitN(line, " ", 2)
+								fileHash, err := hashFn(path.Join(dirPath, sum[1]))
+								if err != nil {
+									log.Fatal(err)
+								}
+								if fileHash != sum[0] {
+									unMatched++
+									log.Printf("[Not Matched] %s [%d]: %s\n", algo, i, sum[1])
+								} else if verbose {
+									log.Printf("[Matched] %s [%d]: %s\n", algo, i, sum[1])
+								}
+								tot++
+							}(i, line)
 						}
+
+						wg.Wait()
+
 						timeEnd := time.Now().Unix()
 						timeConsumed += timeEnd - timeStart
 						log.Printf("%s: %d files, %d seconds, UnMatched count: %d\n", algo, tot, timeEnd-timeStart, unMatched)
+
+						err = file.Close()
+
+						if err != nil {
+							log.Fatal(err)
+						}
+
 					}
+
 					log.Printf("All files Verified, %d seconds\n", timeConsumed)
+
 					return nil
 				},
 			},
