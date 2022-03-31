@@ -61,7 +61,7 @@ func main() {
 		},
 		&cli.IntFlag{
 			Name:        "parallel",
-			Aliases:     []string{"n"},
+			Aliases:     []string{"p"},
 			Value:       runtime.NumCPU(),
 			Usage:       "The number of parallel workers",
 			Destination: &parallelNum,

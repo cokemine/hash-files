@@ -21,7 +21,7 @@ COMMANDS:
 GLOBAL OPTIONS:
    --dir value, -d value       The directory to be hashed (default: "$(pwd)")
    --algo value, -a value      The hash algorithm to use, multiple algorithms can be specified by comma separated (default: "md5")
-   --parallel value, -n value  The number of parallel workers (default: 16)
+   --parallel value, -p value  The number of parallel workers (default: 16)
    --verbose                   Verbose output log (default: false)
    --help, -h                  show help (default: false)
 ```
